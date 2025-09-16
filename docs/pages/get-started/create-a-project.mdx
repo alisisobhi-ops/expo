@@ -1,24 +1,64 @@
----
-title: Create a project
-description: Learn how to create a new Expo project.
-hideTOC: true
----
+// App.js import React, { useState } from 'react'; import { View, Text, TextInput, Button, ScrollView } from 'react-native';
 
-import { Terminal } from '~/ui/components/Snippet';
+export default function App() { const [screen, setScreen] = useState('home'); const [requests, setRequests] = useState([]); const [current, setCurrent] = useState(null); const [driverOnline, setDriverOnline] = useState(false);
 
-System requirements:
+function createRequest(data) { const id = Date.now().toString(); const r = { id, ...data, status: 'waiting' }; setRequests([r, ...requests]); setCurrent(r); setScreen('customer'); }
 
-- [Node.js (LTS)](https://nodejs.org/en/).
-- macOS, Windows (Powershell and [WSL 2](https://expo.fyi/wsl)), and Linux are supported.
+function acceptRequest(id) { setRequests(reqs => reqs.map(r => r.id===id ? {...r, status: 'accepted', driver: 'راننده نمونه'} : r)); } function startRequest(id) { setRequests(reqs => reqs.map(r => r.id===id ? {...r, status: 'enroute'} : r)); } function finishRequest(id) { setRequests(reqs => reqs.map(r => r.id===id ? {...r, status: 'done'} : r)); }
 
-We recommend starting with the default project created by `create-expo-app`. The default project includes example code to help you get started.
+return ( <View style={{flex:1, padding:16, paddingTop:48}}> <Text style={{fontSize:20, fontWeight:'bold', marginBottom:12}}>سرویس یدک‌کشی (نمونه)</Text> {screen==='home' && ( <ScrollView> <Button title="ثبت درخواست جدید" onPress={()=>setScreen('create')} /> <View style={{height:12}} /> <Button title="پنل راننده" onPress={()=>setScreen('driver')} /> <View style={{height:12}} /> <Button title="پنل ادمین" onPress={()=>setScreen('admin')} /> </ScrollView> )}
 
-To create a new project, run the following command:
+{screen==='create' && (
+    <CreateForm onCreate={createRequest} onBack={()=>setScreen('home')} />
+  )}
 
-<Terminal cmd={['$ npx create-expo-app@latest']} />
+  {screen==='customer' && current && (
+    <View>
+      <Text>درخواست شما ثبت شد.</Text>
+      <Text>وضعیت: {current.status}</Text>
+      <Button title="بازگشت به خانه" onPress={()=>setScreen('home')} />
+    </View>
+  )}
 
-> You can choose a different template by adding the [`--template` option](/more/create-expo/#--template).
+  {screen==='driver' && (
+    <ScrollView>
+      <View style={{flexDirection:'row', alignItems:'center', justifyContent:'space-between'}}>
+        <Text style={{fontWeight:'bold'}}>داشبورد راننده</Text>
+        <Button title={driverOnline? 'آفلاین' : 'آنلاین'} onPress={()=>setDriverOnline(!driverOnline)} />
+      </View>
+      {requests.length===0 && <Text style={{marginTop:8}}>درخواستی وجود ندارد.</Text>}
+      {requests.map(r => (
+        <View key={r.id} style={{padding:8, borderWidth:1, marginTop:8}}>
+          <Text>{r.customerName} — {r.origin} → {r.destination || '-'}</Text>
+          <Text>وضعیت: {r.status}</Text>
+          <View style={{flexDirection:'row', marginTop:6}}>
+            <Button title="پذیرش" onPress={()=>acceptRequest(r.id)} />
+            <View style={{width:8}} />
+            <Button title="شروع" onPress={()=>startRequest(r.id)} />
+            <View style={{width:8}} />
+            <Button title="اتمام" onPress={()=>finishRequest(r.id)} />
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  )}
 
-## Next step
+  {screen==='admin' && (
+    <ScrollView>
+      <Text style={{fontWeight:'bold'}}>پنل ادمین</Text>
+      <Text style={{marginTop:8}}>تعداد درخواست‌ها: {requests.length}</Text>
+      <Text style={{marginTop:8}}>کمیسیون: 10%</Text>
+      <Button title="بازگشت" onPress={()=>setScreen('home')} />
+    </ScrollView>
+  )}
 
-You have a project. Now it's time to set up your development environment so that you can start developing.
+</View>
+
+); }
+
+function CreateForm({onCreate, onBack}) { const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [origin, setOrigin] = useState(''); const [destination, setDestination] = useState(''); const [distance, setDistance] = useState('10');
+
+return ( <ScrollView> <Text>فرم درخواست</Text> <TextInput placeholder="نام" value={name} onChangeText={setName} style={{borderWidth:1, padding:8, marginTop:8}} /> <TextInput placeholder="شماره تماس" value={phone} onChangeText={setPhone} style={{borderWidth:1, padding:8, marginTop:8}} /> <TextInput placeholder="مبدا" value={origin} onChangeText={setOrigin} style={{borderWidth:1, padding:8, marginTop:8}} /> <TextInput placeholder="مقصد" value={destination} onChangeText={setDestination} style={{borderWidth:1, padding:8, marginTop:8}} /> <TextInput placeholder="فاصله تخمینی (کیلومتر)" value={distance} onChangeText={setDistance} keyboardType="numeric" style={{borderWidth:1, padding:8, marginTop:8}} /> <View style={{height:12}} /> <Button title="ثبت" onPress={()=>{ onCreate({customerName:name, phone, origin, destination, distanceKm: Number(distance)}) }} /> <View style={{height:8}} /> <Button title="انصراف" onPress={onBack} /> </ScrollView> ) }
+
+// config.json { "neshan_api_key": "service.d546f688b2594b6a867ef7b6388be59a" }
+
